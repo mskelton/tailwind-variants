@@ -142,14 +142,14 @@ export const tv = (options, configProp) => {
       return result;
     };
 
-    const getVariantValue = (variant, vrs = variants, slotKey = null) => {
+    const getVariantValue = (variant, vrs = variants, slotKey = null, slotProps = null) => {
       const variantObj = vrs?.[variant];
 
       if (!variantObj || isEmptyObject(variantObj)) {
         return null;
       }
 
-      const variantProp = props?.[variant];
+      const variantProp = slotProps?.[variant] ?? props?.[variant];
 
       if (variantProp === null) return null;
 
@@ -207,13 +207,13 @@ export const tv = (options, configProp) => {
       return Object.keys(variants).map((vk) => getVariantValue(vk, variants));
     };
 
-    const getVariantClassNamesBySlotKey = (slotKey) => {
+    const getVariantClassNamesBySlotKey = (slotKey, slotProps) => {
       if (!variants || typeof variants !== "object") {
         return null;
       }
 
       return Object.keys(variants).reduce((acc, variant) => {
-        const variantValue = getVariantValue(variant, variants, slotKey);
+        const variantValue = getVariantValue(variant, variants, slotKey, slotProps);
 
         const value =
           slotKey === "base" && typeof variantValue === "string"
@@ -336,7 +336,7 @@ export const tv = (options, configProp) => {
               acc[slotKey] = (slotProps) =>
                 cn(
                   slots[slotKey],
-                  getVariantClassNamesBySlotKey(slotKey),
+                  getVariantClassNamesBySlotKey(slotKey, slotProps),
                   compoundClassNames?.[slotKey],
                   compoundSlotClassNames?.[slotKey],
                   slotProps?.class,
