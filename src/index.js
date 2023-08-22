@@ -231,7 +231,7 @@ export const tv = (options, configProp) => {
     const propsWithoutUndefined =
       props && Object.fromEntries(Object.entries(props).filter(([, value]) => value !== undefined));
 
-    const getCompleteProps = (key) => {
+    const getCompleteProps = (key, slotProps) => {
       const initialProp =
         typeof props?.[key] === "object"
           ? {
@@ -243,15 +243,16 @@ export const tv = (options, configProp) => {
         ...defaultVariants,
         ...propsWithoutUndefined,
         ...initialProp,
+        ...slotProps,
       };
     };
 
-    const getCompoundVariantsValue = (cv = []) =>
+    const getCompoundVariantsValue = (cv = [], slotProps) =>
       cv
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ?.filter(({class: tvClass, className: tvClassName, ...compoundVariantOptions}) =>
           Object.entries(compoundVariantOptions).every(([key, value]) => {
-            const completeProps = getCompleteProps(key);
+            const completeProps = getCompleteProps(key, slotProps);
 
             return Array.isArray(value)
               ? value.includes(completeProps[key])
@@ -260,15 +261,15 @@ export const tv = (options, configProp) => {
         )
         .flatMap(({class: tvClass, className: tvClassName}) => [tvClass, tvClassName]);
 
-    const getCompoundVariantClassNames = () => {
-      const cvValues = getCompoundVariantsValue(compoundVariants);
-      const ecvValues = getCompoundVariantsValue(extend?.compoundVariants);
+    const getCompoundVariantClassNames = (slotProps) => {
+      const cvValues = getCompoundVariantsValue(compoundVariants, slotProps);
+      const ecvValues = getCompoundVariantsValue(extend?.compoundVariants, slotProps);
 
       return flatMergeArrays(ecvValues, cvValues);
     };
 
-    const getCompoundVariantClassNamesBySlot = () => {
-      const compoundClassNames = getCompoundVariantClassNames(compoundVariants);
+    const getCompoundVariantClassNamesBySlot = (slotProps) => {
+      const compoundClassNames = getCompoundVariantClassNames(slotProps);
 
       if (!Array.isArray(compoundClassNames)) {
         return compoundClassNames;
@@ -291,7 +292,7 @@ export const tv = (options, configProp) => {
       }, {});
     };
 
-    const getCompoundSlotClassNameBySlot = () => {
+    const getCompoundSlotClassNameBySlot = (slotProps) => {
       if (compoundSlots.length < 1) {
         return null;
       }
@@ -303,7 +304,7 @@ export const tv = (options, configProp) => {
           const slotVariantsKeys = Object.keys(slotVariants);
 
           for (const key of slotVariantsKeys) {
-            const completePropsValue = getCompleteProps(key)[key];
+            const completePropsValue = getCompleteProps(key, slotProps)[key];
 
             // if none of the slot variant keys are included in props or default variants then skip the slot
             // if the included slot variant key is not equal to the slot variant value then skip the slot
@@ -327,9 +328,6 @@ export const tv = (options, configProp) => {
 
     // with slots
     if (!isEmptyObject(slotProps) || !isEmptyObject(extend?.slots)) {
-      const compoundClassNames = getCompoundVariantClassNamesBySlot() ?? [];
-      const compoundSlotClassNames = getCompoundSlotClassNameBySlot() ?? [];
-
       const slotsFns =
         typeof slots === "object" && !isEmptyObject(slots)
           ? Object.keys(slots).reduce((acc, slotKey) => {
@@ -337,8 +335,8 @@ export const tv = (options, configProp) => {
                 cn(
                   slots[slotKey],
                   getVariantClassNamesBySlotKey(slotKey, slotProps),
-                  compoundClassNames?.[slotKey],
-                  compoundSlotClassNames?.[slotKey],
+                  (getCompoundVariantClassNamesBySlot(slotProps) ?? [])[slotKey],
+                  (getCompoundSlotClassNameBySlot(slotProps) ?? [])[slotKey],
                   slotProps?.class,
                   slotProps?.className,
                 )(config);
